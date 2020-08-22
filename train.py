@@ -1,4 +1,4 @@
-from agent.agent_DDQN import Agent
+from agent.agent_DDQNN import Agent
 from helpers import getStockDataVec, getState
 from matplotlib import pyplot as plt
 import numpy as np
