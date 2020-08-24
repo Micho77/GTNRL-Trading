@@ -1,6 +1,8 @@
+# Import relevant modules
 from agent.agent_DDQNN import Agent
 from helpers import getStockDataVec, getState
 from matplotlib import pyplot as plt
+import pandas as pd
 import numpy as np
 import random
 
@@ -8,129 +10,79 @@ import random
 random.seed(0)
 np.random.seed(0)
 
-# Get data & initialize RL variables
-# stock_name, window_size, episode_count = "usdcad_jan_march_2020", 24, 25
-stock_name, window_size, episode_count = "usdcad_2020", 24, 25
-balance = 0
-agent = Agent(window_size+2, balance)
-data = getStockDataVec(stock_name) # closing price
+# Get data
+file_name = 'g10_daily_carry_rs_2000_2019.csv'
+rs_data = pd.read_csv(f'data/{file_name}', index_col=0, header=0)
 
-l = len(data) - 1
+# Initialize Agent variables
+trading_currency = 'EURUSD'
+window_size = 252
+episode_count = 10
 batch_size = 64  # batch size for replaying/training the agent
+agent = Agent(state_size=(window_size, rs_data.shape[1]))
 
-portfolio_values = []
+# Initialize training variables
 total_rewards_across_episodes = []
 
 # Training over episodes
-for e in range(episode_count + 1):
+for e in range(episode_count):
 
-    print("Episode " + str(e) + "/" + str(episode_count))
-    print("Epsilon:{}".format(agent.epsilon))
+    # Print progress
+    print(f"Episode: {e+1}/{episode_count}")
+    print(f"Epsilon: {agent.epsilon}")
 
     # Reset agent parameters to run next episode
-    agent.buy_inventory = []
-    agent.sell_inventory = []
-    agent.balance = balance
-    reward_episode = 0
-    locked_pnl = 0 # overall pnl
-    
-    # Start with a buy
-    actions = []
-    actions.append(0) 
-    agent.balance -= data[0]
-    agent.buy_inventory.append(data[0])
-    
-    # Initial State at t=1 (state = past returns + buy/sell inventory)
-    state = getState(data, 1, window_size + 1)  # log returns over the past window (need to understand the indexing!)
-    state = np.concatenate((state, np.array(len(agent.sell_inventory)).reshape(1,),
-                           np.array(len(agent.buy_inventory)).reshape(1,)),axis=0).reshape(1,window_size+2)
+    agent.episode_reset()
 
-    # Step over time
-    for t in range(1,l):
+    # Loop over time
+    for t in rs_data.index[window_size:window_size+1000]:
 
-        # Previous portfolio value = net positions * price + balance (note balance already takes account of trades)
-        prev_port_value = (len(agent.buy_inventory)-len(agent.sell_inventory))*data[t]+agent.balance
-        
-        action = agent.act(state)
-        # signals = agent.model.predict(state)[0]
-        # print('Hold:{}, Buy:{}, Sell:{}'.format(signals[0],signals[1],signals[2]))
-        
-        if action == 0 : # Buy signal
-            if(actions[t-1]==0):  # If the previous signal was a buy too, no act
-                pass
-            else:
-                ### Pnl 
-                sold_price = agent.sell_inventory.pop(0) 
-                pnl = sold_price - data[t]
-                # print("Buy:{}".format(data[t]) + " | Pnl from closing short position:{}".format(pnl))
-                locked_pnl += pnl
-                agent.balance -= data[t]
-                ### Taking long position 
-                agent.balance -= data[t]
-                agent.buy_inventory.append(data[t])
-                # print("Buy:{}".format(data[t]))
-                
-        else: # Sell signal 
-            if(actions[t-1]==1): # If the previous signal was a sell too, no act
-                pass
-            else:
-                ### Pnl 
-                bought_price = agent.buy_inventory.pop(0) 
-                pnl = data[t]-bought_price
-                # print("Sell:{}".format(data[t]) + " | Pnl from closing long position:{}".format(pnl))
-                locked_pnl += pnl
-                agent.balance += data[t]
-                ### Taking short position  
-                agent.balance += data[t]
-                agent.sell_inventory.append(data[t])
-                # print("Sell:{}".format(data[t]))
-            
-        current_port_value = (len(agent.buy_inventory)-len(agent.sell_inventory))*data[t+1]+agent.balance
-        reward = 10000*(current_port_value-prev_port_value)
-        reward_episode += reward
-        # print(reward)
+        # past {window_size} log returns up to and excluding {t}
+        X = rs_data.loc[:t].iloc[-window_size-1:-1]  # fetch raw data
+        X = X.values.reshape([1]+list(X.shape))  # tensorize
 
-        done = True if t == l - 1 else False
-        next_state = getState(data, t + 1, window_size + 1)
-        next_state = np.concatenate((next_state, np.array(len(agent.sell_inventory)).reshape(1,),
-                                     np.array(len(agent.buy_inventory)).reshape(1,)),axis=0).reshape(1,window_size+2)
-        
-        agent.memory.append((state, action, reward, next_state, done))
-        
-        state = next_state
-        actions.append(action)
+        # Get action from agent
+        action = agent.act(X)
 
+        # Process returns/rewards
+        action_direction = -1*(action*2-1) # map 0->buy->+1, 1->sell->-1
+        reward = 100*action_direction*rs_data.loc[t, trading_currency]
+        agent.reward_episode += reward
+        print(agent.reward_episode, reward)
+
+        # Fetch next state
+        next_X = rs_data.loc[:t].iloc[-window_size:]  # fetch raw data
+        next_X = next_X.values.reshape([1]+list(next_X.shape))  # tensorize
+        done = True if t == rs_data.index[-1] else False
+
+        # Append to memory & train
+        agent.memory.append((X[0], action, reward, next_X[0], done))
         agent.replay(min(batch_size, len(agent.memory)))
 
+        # Print if done
         if done:
-            final_portfolio_value=(len(agent.buy_inventory)-len(agent.sell_inventory))*data[t]+agent.balance
             print("--------------------------------")
-            print("Total Portfolio Value:{}".format(final_portfolio_value))
-            print("Locked Pnl:{}".format(locked_pnl))
-            print("Balance:{}".format(agent.balance))
-            print("Mark to Market:{}".format((len(agent.buy_inventory)-len(agent.sell_inventory))*data[t]))
-            print("Episode reward:{}".format(reward_episode))
-            print("Number of holding currency:{}".format(len(agent.buy_inventory)))
-            print("Number of shorted currency:{}".format(len(agent.sell_inventory)))
+            print(f"Episode reward:{agent.reward_episode}%")
             print("--------------------------------")
-    
-    total_rewards_across_episodes.append(reward_episode)
-    portfolio_values.append(final_portfolio_value)
+
+    # Record episode data
+    total_rewards_across_episodes.append(agent.reward_episode)
+
+    # Update agent parameters
     agent.update_target_model()
+    agent.epsilon = max(agent.epsilon_decay*agent.epsilon, agent.epsilon_min)
 
-    if agent.epsilon > agent.epsilon_min:
-        agent.epsilon *= agent.epsilon_decay
-
-    agent.model.save("models/model_ep" + str(e))
-    agent.target_model.save("models/model_target_ep"+str(e))
+    # # Save models
+    # agent.model.save("models/model_ep" + str(e))
+    # agent.target_model.save("models/model_target_ep"+str(e))
         
-plt.figure()
-plt.plot(portfolio_values)
-plt.title('Portfolio Values across Episodes')
-plt.savefig('Portvalues.png')
-plt.figure()
-plt.plot(total_rewards_across_episodes)
-plt.title('Reward Evolution across Episodes')
-plt.savefig('Rewards.png')
+# plt.figure()
+# plt.plot(portfolio_values)
+# plt.title('Portfolio Values across Episodes')
+# plt.savefig('Portvalues.png')
+# plt.figure()
+# plt.plot(total_rewards_across_episodes)
+# plt.title('Reward Evolution across Episodes')
+# plt.savefig('Rewards.png')
 
 
