@@ -1,6 +1,5 @@
 # Import relevant modules
 from agent.agent_DDQNN import Agent
-from helpers import getStockDataVec, getState
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
@@ -22,7 +21,7 @@ batch_size = 64  # batch size for replaying/training the agent
 agent = Agent(state_size=(window_size, rs_data.shape[1]))
 
 # Initialize training variables
-total_rewards_across_episodes = []
+total_rewards_df = pd.DataFrame(dtype=float)
 
 # Training over episodes
 for e in range(episode_count):
@@ -35,7 +34,7 @@ for e in range(episode_count):
     agent.episode_reset()
 
     # Loop over time
-    for t in rs_data.index[window_size:window_size+1000]:
+    for t in rs_data.index[window_size:window_size+100]:
 
         # past {window_size} log returns up to and excluding {t}
         X = rs_data.loc[:t].iloc[-window_size-1:-1]  # fetch raw data
@@ -47,8 +46,9 @@ for e in range(episode_count):
         # Process returns/rewards
         action_direction = -1*(action*2-1) # map 0->buy->+1, 1->sell->-1
         reward = 100*action_direction*rs_data.loc[t, trading_currency]
-        agent.reward_episode += reward
-        print(agent.reward_episode, reward)
+        agent.episode_tot_reward += reward
+        agent.episode_rewards.append(reward)
+        print(t, agent.episode_tot_reward, reward)
 
         # Fetch next state
         next_X = rs_data.loc[:t].iloc[-window_size:]  # fetch raw data
@@ -62,11 +62,11 @@ for e in range(episode_count):
         # Print if done
         if done:
             print("--------------------------------")
-            print(f"Episode reward:{agent.reward_episode}%")
+            print(f"Episode reward:{agent.episode_tot_reward}%")
             print("--------------------------------")
 
     # Record episode data
-    total_rewards_across_episodes.append(agent.reward_episode)
+    total_rewards_df[agent.epsilon] = agent.episode_rewards
 
     # Update agent parameters
     agent.update_target_model()
@@ -76,13 +76,6 @@ for e in range(episode_count):
     # agent.model.save("models/model_ep" + str(e))
     # agent.target_model.save("models/model_target_ep"+str(e))
         
-# plt.figure()
-# plt.plot(portfolio_values)
-# plt.title('Portfolio Values across Episodes')
-# plt.savefig('Portvalues.png')
-# plt.figure()
-# plt.plot(total_rewards_across_episodes)
-# plt.title('Reward Evolution across Episodes')
-# plt.savefig('Rewards.png')
-
+total_rewards_df.cumsum().plot()
+plt.savefig('strategy returns.png')
 
