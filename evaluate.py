@@ -88,8 +88,8 @@ for e in range(episode_count):
         next_X = next_X.reshape([1] + list(next_X.shape))
 
         # Append to memory & train
-        agent.memory.append((X[0], action, reward, next_X[0], done))
-        agent.replay(min(batch_size, len(agent.memory)))
+        # agent.memory.append((X[0], action, reward, next_X[0], done))
+        # agent.replay(min(batch_size, len(agent.memory)))
 
         # Print if done
         if done:
@@ -108,8 +108,11 @@ for e in range(episode_count):
     # agent.model.save("models/model_ep" + str(e))
     # agent.target_model.save("models/model_target_ep" + str(e))
 
+plt.figure()
 total_rewards_df.cumsum().plot()
-plt.savefig('(EVALUATION) strategy returns.png')
+plt.savefig('results/(EVALUATION) strategy returns.png')
+
+plt.figure()
 total_rewards_df.sum().plot()
-plt.savefig('(EVALUATION) total returns across episodes.png')
+plt.savefig('results/(EVALUATION) total returns across episodes.png')
 

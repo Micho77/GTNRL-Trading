@@ -98,9 +98,12 @@ for e in range(episode_count):
     # Save models
     agent.model.save("models/model_ep" + str(e))
     agent.target_model.save("models/model_target_ep"+str(e))
-        
+
+plt.figure()
 total_rewards_df.cumsum().plot()
-plt.savefig('strategy returns.png')
+plt.savefig('results/strategy returns.png')
+
+plt.figure()
 total_rewards_df.sum().plot()
-plt.savefig('total returns across episodes.png')
+plt.savefig('results/total returns across episodes.png')
 
