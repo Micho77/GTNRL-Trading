@@ -85,7 +85,7 @@ for e in range(episode_count):
             print("--------------------------------")
 
     # Record episode data
-    total_rewards_df[agent.epsilon] = agent.episode_rewards
+    total_rewards_df[e] = agent.episode_rewards
 
     # Update agent parameters
     agent.update_target_model()
