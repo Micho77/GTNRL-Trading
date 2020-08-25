@@ -36,6 +36,10 @@ agent = GTNAgent(state_size=(window_size, rs_data['carry'].shape[1], len(rs_type
 # agent = RNNAgent(state_size=(window_size, rs_data['carry'].shape[1]))
 # rs_data = rs_data['carry'] # TODO: Should be matricized instead
 
+# Training vs Evaluation
+split = '2015-01-01'
+rs_y = rs_y[:split]
+
 # Training over episodes
 for e in range(episode_count):
 
@@ -47,7 +51,7 @@ for e in range(episode_count):
     agent.episode_reset()
 
     # Loop over time
-    for t in rs_y.index[window_size:window_size+1000]:
+    for t in rs_y.index[window_size:]:
 
         # past {window_size} log returns up to and excluding {t}
         # X = rs_data.loc[:t].iloc[-window_size-1:-1]  # fetch raw data
@@ -91,10 +95,12 @@ for e in range(episode_count):
     agent.update_target_model()
     agent.epsilon = max(agent.epsilon_decay*agent.epsilon, agent.epsilon_min)
 
-    # # Save models
-    # agent.model.save("models/model_ep" + str(e))
-    # agent.target_model.save("models/model_target_ep"+str(e))
+    # Save models
+    agent.model.save("models/model_ep" + str(e))
+    agent.target_model.save("models/model_target_ep"+str(e))
         
 total_rewards_df.cumsum().plot()
 plt.savefig('strategy returns.png')
+total_rewards_df.sum().plot()
+plt.savefig('total returns across episodes.png')
 

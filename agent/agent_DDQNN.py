@@ -29,6 +29,7 @@ class GTNAgent:
         self.episode_rewards = []
 
         # Model configurations
+        if is_eval: print('loading models')
         self.model = load_model("models/" + model_name) if is_eval else self.model()
         self.target_model = load_model("models/" + model_target_name) if is_eval else self.model
 
