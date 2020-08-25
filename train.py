@@ -1,5 +1,5 @@
 # Import relevant modules
-from agent.agent_DDQNN import Agent
+from agent.agent_DDQNN import RNNAgent, GTNAgent
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
@@ -9,19 +9,32 @@ import random
 random.seed(0)
 np.random.seed(0)
 
-# Get data
-file_name = 'g10_daily_carry_rs_2000_2019.csv'
-rs_data = pd.read_csv(f'data/{file_name}', index_col=0, header=0)
-
 # Initialize Agent variables
 trading_currency = 'EURUSD'
-window_size = 252
+window_size = 22
 episode_count = 10
 batch_size = 64  # batch size for replaying/training the agent
-agent = Agent(state_size=(window_size, rs_data.shape[1]))
 
 # Initialize training variables
 total_rewards_df = pd.DataFrame(dtype=float)
+
+# Get returns data
+rs_types = ['carry', 'open', 'high', 'low', 'last']
+file_names = [f'g10_daily_{t}_rs_2000_2019.csv' for t in rs_types]
+rs_data = dict(zip(rs_types, [pd.read_csv(f'data/{f}', index_col=0, header=0) for f in file_names]))
+rs_y = rs_data['carry'][trading_currency]
+
+# Get graphs data
+A_t = pd.read_csv('data/A_t_22.csv', index_col=0, header=0)
+A_n = pd.read_csv('data/g10_daily_carry_adjacency_matrix_2000_2019.csv', index_col=0, header=0)
+graph_list = [A_t.values, A_n.values]
+
+# Graph Tensor Network Agent
+agent = GTNAgent(state_size=(window_size, rs_data['carry'].shape[1], len(rs_types)), graph_list=graph_list)
+
+# # RNN Agent
+# agent = RNNAgent(state_size=(window_size, rs_data['carry'].shape[1]))
+# rs_data = rs_data['carry'] # TODO: Should be matricized instead
 
 # Training over episodes
 for e in range(episode_count):
@@ -34,26 +47,32 @@ for e in range(episode_count):
     agent.episode_reset()
 
     # Loop over time
-    for t in rs_data.index[window_size:window_size+100]:
+    for t in rs_y.index[window_size:window_size+1000]:
 
         # past {window_size} log returns up to and excluding {t}
-        X = rs_data.loc[:t].iloc[-window_size-1:-1]  # fetch raw data
-        X = X.values.reshape([1]+list(X.shape))  # tensorize
+        # X = rs_data.loc[:t].iloc[-window_size-1:-1]  # fetch raw data
+        # X = X.values.reshape([1]+list(X.shape))  # tensorize
+        X = np.array([rs_data[k].loc[:t].iloc[-window_size-1:-1].values for k in rs_data.keys()])
+        X = X.transpose([1,2,0])
+        X = X.reshape([1]+list(X.shape))
 
         # Get action from agent
         action = agent.act(X)
 
         # Process returns/rewards
         action_direction = -1*(action*2-1) # map 0->buy->+1, 1->sell->-1
-        reward = 100*action_direction*rs_data.loc[t, trading_currency]
+        reward = 100*action_direction*rs_y[t]
         agent.episode_tot_reward += reward
         agent.episode_rewards.append(reward)
         print(t, agent.episode_tot_reward, reward)
 
         # Fetch next state
-        next_X = rs_data.loc[:t].iloc[-window_size:]  # fetch raw data
-        next_X = next_X.values.reshape([1]+list(next_X.shape))  # tensorize
-        done = True if t == rs_data.index[-1] else False
+        done = True if t == rs_y.index[-1] else False
+        # next_X = rs_data.loc[:t].iloc[-window_size:]  # fetch raw data
+        # next_X = next_X.values.reshape([1]+list(next_X.shape))  # tensorize
+        next_X = np.array([rs_data[k].loc[:t].iloc[-window_size:].values for k in rs_data.keys()])
+        next_X = next_X.transpose([1,2,0])
+        next_X = next_X.reshape([1]+list(next_X.shape))
 
         # Append to memory & train
         agent.memory.append((X[0], action, reward, next_X[0], done))
