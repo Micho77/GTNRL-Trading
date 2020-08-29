@@ -12,18 +12,18 @@ np.random.seed(0)
 
 # Initialize Agent variables
 trading_currency = 'EURUSD'
-window_size = 22
-episode_count = 10
+window_size = 30
+episode_count = 25
 batch_size = 64  # batch size for replaying/training the agent
 
 # Initialize training variables
 total_rewards_df = pd.DataFrame(dtype=float)
 
 # Get returns data
-rs_types = ['carry', 'open', 'high', 'low', 'last']
-file_names = [f'g10_daily_{t}_rs_2000_2019.csv' for t in rs_types]
+rs_types = ['open', 'high', 'low', 'last']
+file_names = [f'g10_minute_{t}_rs_2019-10-01.csv' for t in rs_types]
 rs_data = dict(zip(rs_types, [pd.read_csv(f'data/{f}', index_col=0, header=0) for f in file_names]))
-rs_y = rs_data['carry'][trading_currency]
+rs_y = rs_data['last'][trading_currency]
 
 # Get graphs data
 A_t = pd.read_csv('data/A_t_22.csv', index_col=0, header=0)
@@ -31,8 +31,8 @@ A_n = pd.read_csv('data/g10_daily_carry_adjacency_matrix_2000_2019.csv', index_c
 graph_list = [A_t.values, A_n.values]
 
 # Training vs Evaluation
-split = '2015-01-01'
-rs_y = rs_y[split:]
+split = int(0.7*rs_y.shape[0])
+rs_y = rs_y.iloc[split:]
 
 # Evaluate over episodes
 
