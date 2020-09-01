@@ -46,7 +46,7 @@ TODO:
 for e in range(episode_count):
 
     # Graph Tensor Network Agent
-    agent = GTNAgent(state_size=(window_size, rs_data['carry'].shape[1], len(rs_types)),
+    agent = GTNAgent(state_size=(window_size, rs_data['last'].shape[1], len(rs_types)),
                      graph_list=graph_list,
                      model_name=f'model_ep{e}',
                      model_target_name=f'model_target_ep{e}',

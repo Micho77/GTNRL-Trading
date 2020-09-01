@@ -119,7 +119,7 @@ class RNNAgent:
         model = Sequential()
         model.add(GRU(units=32, activation="relu"))
         model.add(Dense(self.action_size, activation="linear"))
-        model.compile(loss="mse", optimizer=Adam(lr=0.0001))
+        model.compile(loss="mse", optimizer=Adam(lr=0.001))
 
         return model
 
