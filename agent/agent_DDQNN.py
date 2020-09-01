@@ -30,8 +30,8 @@ class GTNAgent:
 
         # Model configurations
         if is_eval: print('loading models')
-        self.model = load_model("models/" + model_name) if is_eval else self.model()
-        self.target_model = load_model("models/" + model_target_name) if is_eval else self.model
+        self.model = load_model("models - GTN/" + model_name) if is_eval else self.model()
+        self.target_model = load_model("models - GTN/" + model_target_name) if is_eval else self.model
 
     def episode_reset(self):
         # Reset episode variables
@@ -40,7 +40,7 @@ class GTNAgent:
 
     def model(self):
 
-        tt_ips = [self.state_size[0], self.state_size[1], 8]
+        tt_ips = [self.state_size[0], self.state_size[1], 16]
         tt_ops = [3,3,3]
         tt_ranks = [1,2,2,1]
 
@@ -91,13 +91,13 @@ class RNNAgent:
     def __init__(self, state_size=None, balance=0, is_eval=False, model_name="", model_target_name=""):
 
         # Training / agent configurations
-        self.state_size = state_size 
+        self.state_size = state_size
         self.action_size = 2  # buy, sell
         self.memory = deque(maxlen=100000)
         self.model_name = model_name
         self.model_target_name = model_target_name
         self.is_eval = is_eval
-        self.gamma = 0.99 
+        self.gamma = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.85
@@ -105,8 +105,8 @@ class RNNAgent:
         self.episode_rewards = []
 
         # Model configurations
-        self.model = load_model("models/" + model_name) if is_eval else self.model()
-        self.target_model = load_model("models/"+ model_target_name) if is_eval else self.model
+        self.model = load_model("models - RNN/" + model_name) if is_eval else self.model()
+        self.target_model = load_model("models - RNN/"+ model_target_name) if is_eval else self.model
 
     def episode_reset(self):
 
@@ -117,7 +117,8 @@ class RNNAgent:
     def model(self):
 
         model = Sequential()
-        model.add(GRU(units=32, activation="relu"))
+        model.add(GRU(units=16, activation="relu"))
+        model.add(Dense(3*3*3, activation="relu"))
         model.add(Dense(self.action_size, activation="linear"))
         model.compile(loss="mse", optimizer=Adam(lr=0.001))
 

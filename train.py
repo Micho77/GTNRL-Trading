@@ -14,6 +14,7 @@ trading_currency = 'EURUSD'
 window_size = 30
 episode_count = 25
 batch_size = 64  # batch size for replaying/training the agent
+agent_type = 'RNN'  # RNN or GTN
 
 # Initialize training variables
 total_rewards_df = pd.DataFrame(dtype=float)
@@ -29,12 +30,13 @@ A_t = pd.read_csv('data/A_t_22.csv', index_col=0, header=0)
 A_n = pd.read_csv('data/g10_daily_carry_adjacency_matrix_2000_2019.csv', index_col=0, header=0)
 graph_list = [A_t.values, A_n.values]
 
-# Graph Tensor Network Agent
-agent = GTNAgent(state_size=(window_size, rs_data['last'].shape[1], len(rs_types)), graph_list=graph_list)
-
-# # RNN Agent
-# agent = RNNAgent(state_size=(window_size, rs_data['carry'].shape[1]))
-# rs_data = rs_data['carry'] # TODO: Should be matricized instead
+# Agent choice
+if agent_type == 'RNN':
+    agent = RNNAgent(state_size=(window_size, rs_data['last'].shape[1]))
+    rs_data = pd.concat(list(rs_data.values()), 1)  # matricized version
+elif agent_type == 'GTN':
+    agent = GTNAgent(state_size=(window_size, rs_data['last'].shape[1], len(rs_types)),
+                     graph_list=graph_list)
 
 # Training vs Evaluation
 split = int(0.7*rs_y.shape[0])
@@ -54,11 +56,13 @@ for e in range(episode_count):
     for t in rs_y.index[window_size:]:
 
         # past {window_size} log returns up to and excluding {t}
-        # X = rs_data.loc[:t].iloc[-window_size-1:-1]  # fetch raw data
-        # X = X.values.reshape([1]+list(X.shape))  # tensorize
-        X = np.array([rs_data[k].loc[:t].iloc[-window_size-1:-1].values for k in rs_data.keys()])
-        X = X.transpose([1,2,0])
-        X = X.reshape([1]+list(X.shape))
+        if agent_type == 'RNN':
+            X = rs_data.loc[:t].iloc[-window_size-1:-1]  # fetch raw data
+            X = X.values.reshape([1]+list(X.shape))  # tensorize
+        elif agent_type == 'GTN':
+            X = np.array([rs_data[k].loc[:t].iloc[-window_size-1:-1].values for k in rs_data.keys()])
+            X = X.transpose([1,2,0])
+            X = X.reshape([1]+list(X.shape))
 
         # Get action from agent
         action = agent.act(X)
@@ -72,11 +76,13 @@ for e in range(episode_count):
 
         # Fetch next state
         done = True if t == rs_y.index[-1] else False
-        # next_X = rs_data.loc[:t].iloc[-window_size:]  # fetch raw data
-        # next_X = next_X.values.reshape([1]+list(next_X.shape))  # tensorize
-        next_X = np.array([rs_data[k].loc[:t].iloc[-window_size:].values for k in rs_data.keys()])
-        next_X = next_X.transpose([1,2,0])
-        next_X = next_X.reshape([1]+list(next_X.shape))
+        if agent_type == 'RNN':
+            next_X = rs_data.loc[:t].iloc[-window_size:]  # fetch raw data
+            next_X = next_X.values.reshape([1]+list(next_X.shape))  # tensorize
+        elif agent_type == 'GTN':
+            next_X = np.array([rs_data[k].loc[:t].iloc[-window_size:].values for k in rs_data.keys()])
+            next_X = next_X.transpose([1,2,0])
+            next_X = next_X.reshape([1]+list(next_X.shape))
 
         # Append to memory & train
         agent.memory.append((X[0], action, reward, next_X[0], done))
@@ -96,14 +102,14 @@ for e in range(episode_count):
     agent.epsilon = max(agent.epsilon_decay*agent.epsilon, agent.epsilon_min)
 
     # Save models
-    agent.model.save("models/model_ep" + str(e))
-    agent.target_model.save("models/model_target_ep"+str(e))
+    agent.model.save(f"models - {agent_type}/model_ep" + str(e))
+    agent.target_model.save(f"models - {agent_type}/model_target_ep"+str(e))
 
 plt.figure()
 total_rewards_df.cumsum().plot()
-plt.savefig('results/strategy returns.png')
+plt.savefig(f'results/{agent_type} strategy returns.png')
 
 plt.figure()
 total_rewards_df.sum().plot()
-plt.savefig('results/total returns across episodes.png')
+plt.savefig(f'results/{agent_type} total returns across episodes.png')
 
