@@ -4,7 +4,6 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import random
-import os
 
 # Set random seed
 random.seed(0)
