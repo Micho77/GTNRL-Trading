@@ -14,7 +14,7 @@ trading_currency = 'EURUSD'
 window_size = 30
 episode_count = 25
 batch_size = 64  # batch size for replaying/training the agent
-agent_type = 'RNN'  # RNN or GTN
+agent_type = 'GTN'  # RNN or GTN
 
 # Initialize training variables
 total_rewards_df = pd.DataFrame(dtype=float)
