@@ -53,7 +53,7 @@ class GTNAgent:
 
         model.add(Flatten())
         model.add(Dense(self.action_size, activation="linear"))
-        model.compile(loss="mse", optimizer=Adam(lr=0.001))
+        model.compile(loss="mse", optimizer=Adam(lr=0.0002))
 
         return model
 
@@ -120,7 +120,7 @@ class RNNAgent:
         model.add(GRU(units=16, activation="relu"))
         model.add(Dense(3*3*3, activation="relu"))
         model.add(Dense(self.action_size, activation="linear"))
-        model.compile(loss="mse", optimizer=Adam(lr=0.001))
+        model.compile(loss="mse", optimizer=Adam(lr=0.0002))
 
         return model
 

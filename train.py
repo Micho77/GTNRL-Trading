@@ -113,3 +113,4 @@ plt.figure()
 total_rewards_df.sum().plot()
 plt.savefig(f'results/{agent_type} total returns across episodes.png')
 
+total_rewards_df.to_csv(f'results/{agent_type} {trading_currency} training rewards df.csv')
