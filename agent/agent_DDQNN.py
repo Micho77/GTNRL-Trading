@@ -29,8 +29,8 @@ class TTNNAgent:
 
         # Model configurations
         if is_eval: print('loading models')
-        self.model = load_model("models - GTN/" + model_name) if is_eval else self.model()
-        self.target_model = load_model("models - GTN/" + model_target_name) if is_eval else self.model
+        self.model = load_model("models - TTNN/" + model_name) if is_eval else self.model()
+        self.target_model = load_model("models - TTNN/" + model_target_name) if is_eval else self.model
 
     def episode_reset(self):
         # Reset episode variables
