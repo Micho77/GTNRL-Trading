@@ -51,14 +51,15 @@ def compute_metrics (rs):
     return results
 
 
-rs_gtn = get_testing_df(agent='GTN').mean(1)
-rs_rnn = get_testing_df(agent='RNN').mean(1)
+agents = ['GTN', 'RNN', 'TTNN']
+all_rs = []
+for agent in agents:
+    all_rs.append(get_testing_df(agent=agent).mean(1).copy())
 
-rs_gtn.cumsum().plot()
-rs_rnn.cumsum().plot()
-plt.legend(['GTN', 'RNN'])
+pd.concat(all_rs, axis=1).cumsum().plot()
+plt.legend(agents)
 plt.title('Out-of-Sample Performance')
 
-results = pd.concat([compute_metrics(rs_gtn), compute_metrics(rs_rnn)], axis=1)
-results.columns = ['GTN', 'RNN']
+results = pd.concat([compute_metrics(rs) for rs in all_rs], axis=1)
+results.columns = agents
 print(results)

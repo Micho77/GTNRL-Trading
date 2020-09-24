@@ -10,7 +10,7 @@ random.seed(0)
 np.random.seed(0)
 
 # Initialize Agent variables
-trading_currency = 'EURUSD'
+trading_currency = 'USDCHF'
 window_size = 30
 episode_count = 15
 batch_size = 64  # batch size for replaying/training the agent
