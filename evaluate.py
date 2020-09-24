@@ -66,9 +66,9 @@ for e in range(episode_count):
 
     elif agent_type == 'TTNN':
         agent = TTNNAgent(state_size=(window_size, rs_data['last'].shape[1], len(rs_types)),
-                         model_name=f'model_ep{e}',
-                         model_target_name=f'model_target_ep{e}',
-                         is_eval=True)
+                          model_name=f'model_ep{e}',
+                          model_target_name=f'model_target_ep{e}',
+                          is_eval=True)
 
     # Print progress
     print(f"Episode: {e + 1}/{episode_count}")
