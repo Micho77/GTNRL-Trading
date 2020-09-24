@@ -2,7 +2,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Dense, GRU, Dropout, Activation, Flatten
 from tensorflow.keras.optimizers import Adam
-from GraphTensorNetworks import SimpleMultiGraphTensorNetwork as SMGTN
+from GraphTensorNetworks import SpecialMultiGraphTensorNetwork as SMGTN
 from GraphTensorNetworks import TensorTrainLayer as TTL
 import numpy as np
 import random
