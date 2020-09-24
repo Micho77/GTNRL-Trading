@@ -1,5 +1,5 @@
 # Import relevant modules
-from agent.agent_DDQNN import RNNAgent, GTNAgent, TTNNAgent
+from agent.agent_DDQNN import RNNAgent, GTNAgent, TTNNAgent, GNNAgent
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
@@ -14,7 +14,7 @@ trading_currency = 'EURUSD'
 window_size = 30
 episode_count = 15
 batch_size = 64  # batch size for replaying/training the agent
-agent_type = 'TTNN'  # RNN or GTN or TTNN
+agent_type = 'TTNN'  # RNN or GTN or TTNN or GNN
 
 # Initialize training variables
 total_rewards_df = pd.DataFrame(dtype=float)
@@ -42,6 +42,10 @@ elif agent_type == 'GTN':
 elif agent_type == 'TTNN':
     agent = TTNNAgent(state_size=(window_size, rs_data['last'].shape[1], len(rs_types)))
 
+elif agent_type == 'GNN':
+    agent = GNNAgent(state_size=(A_n.shape[0], len(rs_types)*window_size),
+                     graph_adj=A_n.values)
+
 # Training vs Evaluation
 split = int(0.7*rs_y.shape[0])
 rs_y = rs_y.iloc[:split]
@@ -67,6 +71,11 @@ for e in range(episode_count):
             X = np.array([rs_data[k].loc[:t].iloc[-window_size-1:-1].values for k in rs_data.keys()])
             X = X.transpose([1,2,0])
             X = X.reshape([1]+list(X.shape))
+        elif agent_type == 'GNN':
+            X = np.array([rs_data[k].loc[:t].iloc[-window_size-1:-1].values for k in rs_data.keys()])
+            X = X.transpose([2,1,0])
+            X = X.reshape(-1, np.prod(X.shape[1:]))
+            X = X.reshape([1]+list(X.shape))
 
         # Get action from agent
         action = agent.act(X)
@@ -86,6 +95,11 @@ for e in range(episode_count):
         elif (agent_type == 'GTN') or (agent_type == 'TTNN'):
             next_X = np.array([rs_data[k].loc[:t].iloc[-window_size:].values for k in rs_data.keys()])
             next_X = next_X.transpose([1,2,0])
+            next_X = next_X.reshape([1]+list(next_X.shape))
+        elif agent_type == 'GNN':
+            next_X = np.array([rs_data[k].loc[:t].iloc[-window_size:].values for k in rs_data.keys()])
+            next_X = next_X.transpose([2,1,0])
+            next_X = next_X.reshape(-1, np.prod(next_X.shape[1:]))
             next_X = next_X.reshape([1]+list(next_X.shape))
 
         # Append to memory & train
