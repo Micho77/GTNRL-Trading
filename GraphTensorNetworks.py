@@ -9,6 +9,10 @@ Created on Wed Apr 15 17:59:11 2020
 # ============================================================================
 # Import libraries
 import numpy as np
+from tensorflow.keras import activations, initializers, constraints
+from tensorflow.keras import regularizers
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Layer
 import tensorflow as tf
 tf.random.set_seed(0)
 
@@ -145,3 +149,80 @@ class TensorTrainLayer (tf.keras.layers.Layer):
     # Compute input/output shapes
     def compute_output_shape(self, input_shape):
         return (input_shape[0], np.prod(self.tt_ops))
+
+
+# ============================================================================
+# Graph Convolution Neural Network (slightly modified) from
+# github.com/vermaMachineLearning/keras-deep-graph-learning
+class GraphCNN(Layer):
+
+    def __init__(self,
+                 output_dim,
+                 num_filters,
+                 graph_conv_filters,
+                 activation=None,
+                 use_bias=True,
+                 kernel_initializer='glorot_uniform',
+                 bias_initializer='zeros',
+                 kernel_regularizer=None,
+                 bias_regularizer=None,
+                 activity_regularizer=None,
+                 kernel_constraint=None,
+                 bias_constraint=None,
+                 **kwargs):
+        super(GraphCNN, self).__init__(**kwargs)
+
+        self.output_dim = output_dim
+        self.num_filters = num_filters
+        if num_filters != int(graph_conv_filters.get_shape().as_list()[-2]/graph_conv_filters.get_shape().as_list()[-1]):
+            raise ValueError('num_filters does not match with graph_conv_filters dimensions.')
+        self.graph_conv_filters = graph_conv_filters
+
+        self.activation = activations.get(activation)
+        self.use_bias = use_bias
+        self.kernel_initializer = initializers.get(kernel_initializer)
+        self.kernel_initializer.__name__ = kernel_initializer
+        self.bias_initializer = initializers.get(bias_initializer)
+        self.kernel_regularizer = regularizers.get(kernel_regularizer)
+        self.bias_regularizer = regularizers.get(bias_regularizer)
+        self.activity_regularizer = regularizers.get(activity_regularizer)
+        self.kernel_constraint = constraints.get(kernel_constraint)
+        self.bias_constraint = constraints.get(bias_constraint)
+
+    def build(self, input_shape):
+
+        self.input_dim = input_shape[-1]
+        kernel_shape = (self.num_filters * self.input_dim, self.output_dim)
+
+        self.kernel = self.add_weight(shape=kernel_shape,
+                                      initializer=self.kernel_initializer,
+                                      name='kernel',
+                                      regularizer=self.kernel_regularizer,
+                                      constraint=self.kernel_constraint)
+        if self.use_bias:
+            self.bias = self.add_weight(shape=(self.output_dim,),
+                                        initializer=self.bias_initializer,
+                                        name='bias',
+                                        regularizer=self.bias_regularizer,
+                                        constraint=self.bias_constraint)
+        else:
+            self.bias = None
+
+        self.built = True
+
+    def call(self, input):
+
+        # # 3D tensor input: (batch_size x n_nodes x n_features)
+        # output = graph_conv_op(input, self.num_filters, self.graph_conv_filters, self.kernel)
+        output = tf.tensordot(self.graph_conv_filters, input, [1, 1])
+        output = tf.tensordot(output, self.kernel, [2, 0])
+        output = tf.transpose(output, [1, 0, 2])
+        if self.use_bias:
+            output = K.bias_add(output, self.bias)
+        if self.activation is not None:
+            output = self.activation(output)
+        return output
+
+    def compute_output_shape(self, input_shape):
+        output_shape = (input_shape[0], self.output_dim)
+        return output_shape
