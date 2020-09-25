@@ -25,10 +25,13 @@ def get_testing_df (agent='GTN', ep='14'):
 def compute_metrics (rs):
 
     # Total return
-    total_r = rs.sum()
+    total_r = np.exp(rs.sum()*0.01)-1
 
     # Sharpe ratio
     sharpe = rs.mean()/rs.std()
+
+    # Sortino ratio
+    sortino = rs.mean()/rs[rs<0].std()
 
     # Maximum Draw-Down
     current_sum = 0
@@ -36,14 +39,14 @@ def compute_metrics (rs):
     for n in -rs:
         current_sum = max(0, current_sum + n)
         max_sum = max(current_sum, max_sum)
-    max_dd = max_sum
+    max_dd = np.exp(max_sum*0.01)-1
 
     # Hit ratio
     hit_ratio = rs.apply(np.sign).replace(-1,0).mean()
 
     # Results
-    results = pd.Series(data=[total_r, sharpe, max_dd, hit_ratio],
-                        index=['Total Return', 'Sharpe', 'Max DD', 'Hit Ratio'])
+    results = pd.Series(data=[total_r, sharpe, sortino, max_dd, hit_ratio],
+                        index=['Total Return', 'Sharpe', 'Sortino', 'Max DD', 'Hit Rate'])
 
     return results
 
@@ -58,10 +61,10 @@ all_cumrs = 1000*((0.01*pd.concat(all_rs, axis=1)).cumsum().apply(np.exp))
 all_cumrs.plot(figsize=(12, 6), linewidth=5, grid=True)
 plt.legend(agents)
 plt.title('Out-of-Sample Performance')
-plt.xlabel('minutes')
-plt.ylabel('portfolio value')
+# plt.xlabel('minutes')
+# plt.ylabel('portfolio value')
 plt.tight_layout()
 
 results = pd.concat([compute_metrics(rs) for rs in all_rs], axis=1)
 results.columns = agents
-print(results)
+print(results.T)
