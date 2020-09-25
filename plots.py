@@ -4,9 +4,6 @@ import glob
 import matplotlib.pyplot as plt
 
 
-plt.style.use('fivethirtyeight')
-
-
 def get_testing_df (agent='GTN', ep='14'):
 
     # Returns averaged across models per episodes plotting
@@ -51,14 +48,19 @@ def compute_metrics (rs):
     return results
 
 
-agents = ['GTN', 'RNN', 'TTNN']
+agents = ['GTN', 'RNN', 'TTNN', 'GNN']
 all_rs = []
 for agent in agents:
     all_rs.append(get_testing_df(agent=agent).mean(1).copy())
 
-pd.concat(all_rs, axis=1).cumsum().plot()
+plt.rcParams['font.size'] = 20
+all_cumrs = 1000*((0.01*pd.concat(all_rs, axis=1)).cumsum().apply(np.exp))
+all_cumrs.plot(figsize=(12, 6), linewidth=5, grid=True)
 plt.legend(agents)
 plt.title('Out-of-Sample Performance')
+plt.xlabel('minutes')
+plt.ylabel('portfolio value')
+plt.tight_layout()
 
 results = pd.concat([compute_metrics(rs) for rs in all_rs], axis=1)
 results.columns = agents
