@@ -64,6 +64,7 @@ plt.title('Out-of-Sample Performance')
 # plt.xlabel('minutes')
 # plt.ylabel('portfolio value')
 plt.tight_layout()
+plt.savefig('backtest-performance.png')
 
 results = pd.concat([compute_metrics(rs) for rs in all_rs], axis=1)
 results.columns = agents
