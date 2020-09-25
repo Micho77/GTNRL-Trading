@@ -10,11 +10,11 @@ random.seed(0)
 np.random.seed(0)
 
 # Initialize Agent variables
-trading_currency = 'USDCHF'
+trading_currency = 'USDSEK'
 window_size = 30
 episode_count = 15
 batch_size = 64  # batch size for replaying/training the agent
-agent_type = 'TTNN'  # RNN or GTN or TTNN or GNN
+agent_type = 'GNN'  # RNN or GTN or TTNN or GNN
 
 # Initialize training variables
 total_rewards_df = pd.DataFrame(dtype=float)
