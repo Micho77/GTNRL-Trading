@@ -58,14 +58,14 @@ for agent in agents:
 
 plt.rcParams['font.size'] = 20
 all_cumrs = 1000*((0.01*pd.concat(all_rs, axis=1)).cumsum().apply(np.exp))
-all_cumrs.plot(figsize=(12, 6), linewidth=5, grid=True)
-plt.legend(agents)
-plt.title('Out-of-Sample Performance')
+all_cumrs.plot(figsize=(12, 6), linewidth=3, grid=True)
+plt.legend([a.replace('RNN', 'GRU').replace('GNN', 'GCN') for a in agents])
+plt.title('Test-Set Trading Performance')
 # plt.xlabel('minutes')
 # plt.ylabel('portfolio value')
 plt.tight_layout()
 plt.savefig('backtest-performance.png')
 
 results = pd.concat([compute_metrics(rs) for rs in all_rs], axis=1)
-results.columns = agents
+results.columns = [a.replace('RNN', 'GRU').replace('GNN', 'GCN') for a in agents]
 print(results.T)
