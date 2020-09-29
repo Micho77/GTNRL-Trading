@@ -58,7 +58,7 @@ for agent in agents:
 
 plt.rcParams['font.size'] = 20
 all_cumrs = 1000*((0.01*pd.concat(all_rs, axis=1)).cumsum().apply(np.exp))
-all_cumrs.plot(figsize=(12, 6), linewidth=3, grid=True)
+all_cumrs.plot(figsize=(12, 5), linewidth=3, grid=True)
 plt.legend([a.replace('RNN', 'GRU').replace('GNN', 'GCN') for a in agents])
 plt.title('Test-Set Trading Performance')
 # plt.xlabel('minutes')
