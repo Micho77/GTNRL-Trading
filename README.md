@@ -1,9 +1,6 @@
 # Multi-Graph Tensor Networks
 
-This repository implements the algorithmic trading experiment discussed in the Multi-Graph Tensor Networks paper (NeurIPS 2020 - First Workshop on Quantum Tensor Networks in Machine Learning).
-
-- [Paper link 1](https://arxiv.org/abs/2010.13209)
-- [Paper link 2](https://tensorworkshop.github.io/NeurIPS2020/accepted_papers/MGTN_final.pdf) 
+This repository implements the algorithmic trading experiment discussed in the [Multi-Graph Tensor Networks](https://arxiv.org/abs/2010.13209) paper (NeurIPS 2020 - First Workshop on Quantum Tensor Networks in Machine Learning).
 
 ## Terms of Use and Citation
 
