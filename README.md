@@ -5,7 +5,9 @@ This repository implements the algorithmic trading experiment discussed in the M
 - [Paper link 1](https://arxiv.org/abs/2010.13209)
 - [Paper link 2](https://tensorworkshop.github.io/NeurIPS2020/accepted_papers/MGTN_final.pdf) 
 
-## Cite
+## Terms of Use and Citation
+
+The code is provided for research purposes only and without any warranty. Any commercial use is prohibited. When using the code in your research work, you should cite the following paper:
 
 ```
 @inproceedings{xu2020multigraph,
